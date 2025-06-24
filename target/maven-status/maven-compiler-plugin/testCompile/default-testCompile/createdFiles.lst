@@ -1,0 +1,13 @@
+com\example\lib\service\BookServiceTest.class
+com\example\lib\service\CustomerServiceTest.class
+com\example\lib\controller\CustomerControllerTest.class
+com\example\lib\controller\BookControllerTest.class
+com\example\lib\controller\DashboardControllerTest.class
+com\example\lib\controller\AuthControllerTest.class
+com\example\lib\LibApplicationTests.class
+com\example\lib\service\FineServiceTest.class
+com\example\lib\service\UserServiceTest.class
+com\example\lib\controller\BorrowingRecordControllerTest.class
+com\example\lib\controller\FineControllerTest.class
+com\example\lib\service\BorrowingRecordServiceTest.class
+com\example\lib\service\DashboardServiceTest.class
