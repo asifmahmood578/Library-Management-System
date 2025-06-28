@@ -1,5 +1,6 @@
 package com.example.lib.service;
 
+import com.example.lib.exception.CustomerNotFoundException;
 import com.example.lib.model.Customer;
 import com.example.lib.model.Fine;
 import com.example.lib.repository.CustomerRepo;
@@ -74,10 +75,10 @@ class FineServiceTest {
         Long invalidCustomerId = 99L;
         when(customerRepo.findById(invalidCustomerId)).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+        CustomerNotFoundException ex = assertThrows(CustomerNotFoundException.class, () -> {
             fineService.getFinesByCustomerId(invalidCustomerId);
         });
 
-        assertEquals("Customer not found", ex.getMessage());
+        assertEquals("Customer not found with ID: 99", ex.getMessage());
     }
 }

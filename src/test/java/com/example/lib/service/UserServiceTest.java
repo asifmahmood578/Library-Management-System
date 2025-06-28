@@ -1,5 +1,8 @@
 package com.example.lib.service;
 
+import com.example.lib.exception.DuplicateUsernameException;
+import com.example.lib.exception.InvalidCredentialsException;
+import com.example.lib.exception.UserNotFoundException;
 import com.example.lib.model.User;
 import com.example.lib.repository.UserRepo;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,10 +49,10 @@ class UserServiceTest {
 
         when(userRepo.existsByUsername("existing")).thenReturn(true);
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        DuplicateUsernameException ex = assertThrows(DuplicateUsernameException.class,
                 () -> userService.register(user));
 
-        assertEquals("Username already exists", ex.getMessage());
+        assertEquals("Username already exists: existing", ex.getMessage());
     }
 
     @Test
@@ -80,10 +83,10 @@ class UserServiceTest {
 
         when(userRepo.findByUsername("bob")).thenReturn(Optional.of(stored));
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class,
                 () -> userService.login(user));
 
-        assertEquals("Invalid password", ex.getMessage());
+        assertEquals("Invalid password for user: bob", ex.getMessage());
     }
 
     @Test
@@ -93,9 +96,9 @@ class UserServiceTest {
         User user = new User();
         user.setUsername("ghost");
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
+        UserNotFoundException ex = assertThrows(UserNotFoundException.class,
                 () -> userService.login(user));
 
-        assertEquals("User not found", ex.getMessage());
+        assertEquals("User not found: ghost", ex.getMessage());
     }
 }

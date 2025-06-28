@@ -1,5 +1,6 @@
 package com.example.lib.service;
 
+import com.example.lib.exception.*;
 import com.example.lib.model.*;
 import com.example.lib.repository.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,33 +55,6 @@ class BorrowingRecordServiceTest {
     }
 
     @Test
-    void testReturnBookWithFine() {
-        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
-        when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
-        when(borrowingRecordRepo.findByBookAndCustomer(book, customer)).thenReturn(Optional.of(record));
-        when(borrowingRecordRepo.save(any())).thenReturn(record);
-
-        BorrowingRecord returned = borrowingRecordService.returnBook(1L, 1L);
-
-        assertEquals(LocalDate.now(), returned.getReturnDate());
-        verify(fineRepo, times(1)).save(any(Fine.class));  // Fine should be issued
-        assertFalse(book.getIsBorrowed()); // should be false after return
-    }
-
-    @Test
-    void testReturnBookNoFine() {
-        record.setBorrowDate(LocalDate.now().minusDays(3)); // not overdue
-        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
-        when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
-        when(borrowingRecordRepo.findByBookAndCustomer(book, customer)).thenReturn(Optional.of(record));
-        when(borrowingRecordRepo.save(any())).thenReturn(record);
-
-        BorrowingRecord returned = borrowingRecordService.returnBook(1L, 1L);
-
-        verify(fineRepo, never()).save(any()); // no fine
-    }
-
-    @Test
     void testBorrowBookSuccess() {
         when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
         when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
@@ -94,27 +68,77 @@ class BorrowingRecordServiceTest {
     }
 
     @Test
+    void testBorrowBookThrowsIfBookNotFound() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(BookNotFoundException.class, () -> borrowingRecordService.borrowBook(1L, 1L));
+    }
+
+    @Test
+    void testBorrowBookThrowsIfCustomerNotFound() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
+        when(customerRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(CustomerNotFoundException.class, () -> borrowingRecordService.borrowBook(1L, 1L));
+    }
+
+    @Test
     void testBorrowBookThrowsIfBookAlreadyBorrowed() {
         book.setIsBorrowed(true);
         when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
         when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> borrowingRecordService.borrowBook(1L, 1L));
-
-        assertEquals("Book is already borrowed", ex.getMessage());
-
+        assertThrows(BookAlreadyBorrowedException.class, () -> borrowingRecordService.borrowBook(1L, 1L));
     }
 
     @Test
-    void testReturnBookRecordNotFound() {
+    void testReturnBookWithFine() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
+        when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
+        when(borrowingRecordRepo.findByBookAndCustomer(book, customer)).thenReturn(Optional.of(record));
+        when(borrowingRecordRepo.save(any())).thenReturn(record);
+
+        BorrowingRecord returned = borrowingRecordService.returnBook(1L, 1L);
+
+        assertEquals(LocalDate.now(), returned.getReturnDate());
+        verify(fineRepo, times(1)).save(any(Fine.class));  // Fine should be issued
+        assertFalse(book.getIsBorrowed());
+    }
+
+    @Test
+    void testReturnBookNoFine() {
+        record.setBorrowDate(LocalDate.now().minusDays(3));
+        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
+        when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
+        when(borrowingRecordRepo.findByBookAndCustomer(book, customer)).thenReturn(Optional.of(record));
+        when(borrowingRecordRepo.save(any())).thenReturn(record);
+
+        BorrowingRecord returned = borrowingRecordService.returnBook(1L, 1L);
+
+        verify(fineRepo, never()).save(any());
+    }
+
+    @Test
+    void testReturnBookThrowsIfBookNotFound() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(BookNotFoundException.class, () -> borrowingRecordService.returnBook(1L, 1L));
+    }
+
+    @Test
+    void testReturnBookThrowsIfCustomerNotFound() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
+        when(customerRepo.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(CustomerNotFoundException.class, () -> borrowingRecordService.returnBook(1L, 1L));
+    }
+
+    @Test
+    void testReturnBookThrowsIfRecordNotFound() {
         when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
         when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
         when(borrowingRecordRepo.findByBookAndCustomer(book, customer)).thenReturn(Optional.empty());
 
-        RuntimeException ex = assertThrows(RuntimeException.class,
-                () -> borrowingRecordService.returnBook(1L, 1L));
-
-        assertEquals("Borrowing record not found", ex.getMessage());
+        assertThrows(BorrowingRecordNotFoundException.class, () -> borrowingRecordService.returnBook(1L, 1L));
     }
 }

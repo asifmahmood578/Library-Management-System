@@ -56,3 +56,5 @@ class AuthControllerTest {
                 .andExpect(content().string("Login successful"));
     }
 }
+
+

@@ -1,16 +1,20 @@
 package com.example.lib.service;
 
+import com.example.lib.exception.CustomerNotFoundException;
 import com.example.lib.model.Customer;
 import com.example.lib.repository.CustomerRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class CustomerServiceTest {
 
     @Mock
@@ -23,8 +27,6 @@ class CustomerServiceTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
         customer = new Customer();
         customer.setId(1L);
         customer.setName("Alice");
@@ -33,8 +35,7 @@ class CustomerServiceTest {
 
     @Test
     void testFindAll() {
-        List<Customer> mockList = List.of(customer);
-        when(customerRepo.findAll()).thenReturn(mockList);
+        when(customerRepo.findAll()).thenReturn(List.of(customer));
 
         List<Customer> result = customerService.findAll();
         assertEquals(1, result.size());
@@ -42,20 +43,22 @@ class CustomerServiceTest {
     }
 
     @Test
-    void testFindById_Found() {
+    void testFindByIdOrThrow_Found() {
         when(customerRepo.findById(1L)).thenReturn(Optional.of(customer));
 
-        Optional<Customer> result = customerService.findById(1L);
-        assertTrue(result.isPresent());
-        assertEquals("Alice", result.get().getName());
+        Customer result = customerService.findByIdOrThrow(1L);
+        assertNotNull(result);
+        assertEquals("Alice", result.getName());
     }
 
     @Test
-    void testFindById_NotFound() {
+    void testFindByIdOrThrow_NotFound() {
         when(customerRepo.findById(2L)).thenReturn(Optional.empty());
 
-        Optional<Customer> result = customerService.findById(2L);
-        assertFalse(result.isPresent());
+        CustomerNotFoundException ex = assertThrows(CustomerNotFoundException.class,
+                () -> customerService.findByIdOrThrow(2L));
+
+        assertEquals("Customer with ID 2 not found", ex.getMessage());
     }
 
     @Test
@@ -77,8 +80,20 @@ class CustomerServiceTest {
     }
 
     @Test
-    void testDeleteById() {
+    void testDeleteByIdSuccess() {
+        when(customerRepo.existsById(1L)).thenReturn(true);
+
         customerService.deleteById(1L);
-        verify(customerRepo, times(1)).deleteById(1L);
+        verify(customerRepo).deleteById(1L);
+    }
+
+    @Test
+    void testDeleteByIdThrowsIfNotFound() {
+        when(customerRepo.existsById(99L)).thenReturn(false);
+
+        CustomerNotFoundException ex = assertThrows(CustomerNotFoundException.class,
+                () -> customerService.deleteById(99L));
+
+        assertEquals("Customer with ID 99 not found", ex.getMessage());
     }
 }

@@ -1,20 +1,20 @@
 package com.example.lib.controller;
 
+import com.example.lib.exception.CustomerNotFoundException;
 import com.example.lib.model.Customer;
 import com.example.lib.service.CustomerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.*;
+import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -49,7 +49,7 @@ class CustomerControllerTest {
 
     @Test
     void testGetCustomerById_Found() throws Exception {
-        when(customerService.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerService.findByIdOrThrow(1L)).thenReturn(customer);
 
         mockMvc.perform(get("/api/customers/1"))
                 .andExpect(status().isOk())
@@ -58,7 +58,7 @@ class CustomerControllerTest {
 
     @Test
     void testGetCustomerById_NotFound() throws Exception {
-        when(customerService.findById(2L)).thenReturn(Optional.empty());
+        when(customerService.findByIdOrThrow(2L)).thenThrow(new CustomerNotFoundException("Customer not found"));
 
         mockMvc.perform(get("/api/customers/2"))
                 .andExpect(status().isNotFound());
@@ -77,7 +77,7 @@ class CustomerControllerTest {
 
     @Test
     void testEditCustomer() throws Exception {
-        when(customerService.findById(1L)).thenReturn(Optional.of(customer));
+        when(customerService.findByIdOrThrow(1L)).thenReturn(customer);
         when(customerService.save(any(Customer.class))).thenReturn(customer);
 
         mockMvc.perform(put("/api/customers/edit/1")
@@ -88,8 +88,8 @@ class CustomerControllerTest {
     }
 
     @Test
-    void testDeleteCustomer() throws Exception {
-        when(customerService.existsById(1L)).thenReturn(true);
+    void testDeleteCustomer_Success() throws Exception {
+        doNothing().when(customerService).deleteById(1L);
 
         mockMvc.perform(delete("/api/customers/delete/1"))
                 .andExpect(status().isOk());
@@ -97,7 +97,8 @@ class CustomerControllerTest {
 
     @Test
     void testDeleteCustomer_NotFound() throws Exception {
-        when(customerService.existsById(2L)).thenReturn(false);
+        doThrow(new CustomerNotFoundException("Customer not found"))
+                .when(customerService).deleteById(2L);
 
         mockMvc.perform(delete("/api/customers/delete/2"))
                 .andExpect(status().isNotFound());

@@ -1,0 +1,9 @@
+# Ignore build output
+target/
+*.class
+*.jar
+*.dumpstream
+
+# IntelliJ/IDEA config
+.idea/
+*.iml

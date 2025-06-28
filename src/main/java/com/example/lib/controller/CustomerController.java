@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -23,9 +23,8 @@ public class CustomerController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getCustomer(@PathVariable Long id) {
-        return customerService.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Customer customer = customerService.findByIdOrThrow(id); // updated
+        return ResponseEntity.ok(customer);
     }
 
     @PostMapping("/add")
@@ -36,19 +35,16 @@ public class CustomerController {
 
     @PutMapping("/edit/{id}")
     public ResponseEntity<Customer> editCustomer(@PathVariable Long id, @RequestBody @Valid Customer updated) {
-        return customerService.findById(id).map(existing -> {
-            existing.setName(updated.getName());
-            existing.setContactInfo(updated.getContactInfo());
-            return new ResponseEntity<>(customerService.save(existing), HttpStatus.OK);
-        }).orElse(ResponseEntity.notFound().build());
+        Customer existing = customerService.findByIdOrThrow(id); // updated
+        existing.setName(updated.getName());
+        existing.setContactInfo(updated.getContactInfo());
+        Customer saved = customerService.save(existing);
+        return new ResponseEntity<>(saved, HttpStatus.OK);
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Boolean> delete(@PathVariable Long id) {
-        boolean exists = customerService.existsById(id);
-        if (exists) {
-            customerService.deleteById(id);
-        }
-        return new ResponseEntity<>(exists, exists ? HttpStatus.OK : HttpStatus.NOT_FOUND);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        customerService.deleteById(id); // will throw if not found
+        return ResponseEntity.ok().build();
     }
 }

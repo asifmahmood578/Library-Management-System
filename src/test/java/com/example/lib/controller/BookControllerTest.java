@@ -4,16 +4,14 @@ import com.example.lib.model.Book;
 import com.example.lib.service.BookService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.*;
-
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -103,5 +101,15 @@ class BookControllerTest {
 
         mockMvc.perform(delete("/api/books/delete/2"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testSearchBooks() throws Exception {
+        when(bookService.searchBooksByTitle("Clean")).thenReturn(List.of(book));
+
+        mockMvc.perform(get("/api/books/search")
+                        .param("title", "Clean"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Clean Code"));
     }
 }

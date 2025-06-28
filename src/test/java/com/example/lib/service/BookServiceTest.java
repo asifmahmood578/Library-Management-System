@@ -1,5 +1,6 @@
 package com.example.lib.service;
 
+import com.example.lib.exception.BookNotFoundException;
 import com.example.lib.model.Book;
 import com.example.lib.repository.BookRepo;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +64,25 @@ class BookServiceTest {
     }
 
     @Test
+    void testFindByIdOrThrow_Success() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.of(book));
+
+        Book result = bookService.findByIdOrThrow(1L);
+
+        assertNotNull(result);
+        assertEquals("Effective Java", result.getTitle());
+    }
+
+    @Test
+    void testFindByIdOrThrow_ThrowsException() {
+        when(bookRepo.findById(1L)).thenReturn(Optional.empty());
+
+        BookNotFoundException ex = assertThrows(BookNotFoundException.class, () -> bookService.findByIdOrThrow(1L));
+
+        assertEquals("Book not found with ID: 1", ex.getMessage());
+    }
+
+    @Test
     void testSave() {
         when(bookRepo.save(any(Book.class))).thenReturn(book);
 
@@ -82,8 +102,39 @@ class BookServiceTest {
     }
 
     @Test
-    void testDeleteById() {
+    void testDeleteByIdSuccess() {
+        when(bookRepo.existsById(1L)).thenReturn(true);
+
         bookService.deleteById(1L);
+
         verify(bookRepo, times(1)).deleteById(1L);
+    }
+
+    @Test
+    void testDeleteByIdThrowsIfBookNotFound() {
+        when(bookRepo.existsById(1L)).thenReturn(false);
+
+        BookNotFoundException ex = assertThrows(BookNotFoundException.class,
+                () -> bookService.deleteById(1L));
+
+        assertEquals("Cannot delete. Book not found with ID: 1", ex.getMessage());
+    }
+
+    @Test
+    void testSearchBooksByTitle() {
+        Book anotherBook = new Book();
+        anotherBook.setId(2L);
+        anotherBook.setTitle("Java Concurrency");
+        anotherBook.setAuthor("Author B");
+        anotherBook.setPublicationYear(2019);
+        anotherBook.setIsBorrowed(false);
+
+        when(bookRepo.findAll()).thenReturn(List.of(book, anotherBook));
+
+        List<Book> result = bookService.searchBooksByTitle("Java");
+
+        assertEquals(2, result.size());
+        assertTrue(result.get(0).getTitle().contains("Java"));
+        assertTrue(result.get(1).getTitle().contains("Java"));
     }
 }
